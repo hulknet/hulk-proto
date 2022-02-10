@@ -16,15 +16,16 @@ async def handle_announce_request(req: AnnounceRequest):
         return
 
     instructions[req.id] = Instruction(req)
-    print(f"Instruction added: {req.id}")
-    for input_id in instructions[req.id].input_ids:
-        if input_id in input_values:
-            instructions[req.id].inputs[input_id] = input_values[input_id]
-            del input_values[input_id]
-            print(f"Input value added: {input_id.hex()} to {req.id.hex()}")
-        else:
-            input_to_instruction[input_id] = req.id
-            print(f"Input id waiting: {input_id.hex()}")
+    print(f"Instruction added: {req.id.hex()}")
+    for input_parts in instructions[req.id].input_ids:
+        for input_id in input_parts:
+            if input_id in input_values:
+                instructions[req.id].input_parts[input_id] = input_values[input_id]
+                del input_values[input_id]
+                print(f"Input value added: {input_id.hex()} to {req.id.hex()}")
+            else:
+                input_to_instruction[input_id] = req.id
+                print(f"Input id waiting: {input_id.hex()}")
 
     if instructions[req.id].is_ready():
         pass
@@ -33,14 +34,15 @@ async def handle_announce_request(req: AnnounceRequest):
 async def handle_input_request(req: InputRequest):
     if req.id in input_to_instruction:
         instruction_id = input_to_instruction[req.id]
-        instructions[instruction_id].set_input(req.id, req.data)
+        instructions[instruction_id].add_input_part(req.id, req.data)
         del input_to_instruction[req.id]
         print(f"Input value added: {req.id.hex()} to {instruction_id.hex()}")
+
+        if instructions[instruction_id].is_ready():
+            pass
     else:
         input_values[req.id] = req.data
         print(f"Input value waiting: {req.id.hex()}")
-    if instructions[req.id].is_ready():
-        pass
 
 
 async def handle(reader, writer):

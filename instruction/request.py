@@ -1,11 +1,10 @@
 import asyncio
 from io import BytesIO
-from typing import Set, Optional
+from typing import List, Optional
 
 from lib.types import (
-    ID8,
-    int_from_async_reader,
-    int_from_buffer, Driver, Command)
+    ID8, ID8Partition,
+    int_from_async_reader, int_from_buffer, Driver, Command)
 
 
 class AnnounceRequest:
@@ -13,8 +12,8 @@ class AnnounceRequest:
         self.id: Optional[ID8] = None
         self.driver: Optional[Driver] = None
         self.command: Optional[Command] = None
-        self.inputs: Set[ID8] = set()
-        self.outputs: Set[ID8] = set()
+        self.inputs: List[ID8Partition] = list()
+        self.outputs: List[ID8Partition] = list()
         self.data: bytes
 
     @staticmethod
@@ -27,8 +26,11 @@ class AnnounceRequest:
         req.driver = Driver(int.from_bytes(buf.read(1), 'big'))
         req.command = req.driver.command(int.from_bytes(buf.read(1), 'big'))
 
-        req.inputs = {ID8(buf.read(8)) for _ in range(int_from_buffer(buf, 1))}
-        req.outputs = {ID8(buf.read(8)) for _ in range(int_from_buffer(buf, 1))}
+        def read_partition(b: BytesIO) -> ID8Partition:
+            return [ID8(b.read(8)) for _ in range(int_from_buffer(b, 1))]
+
+        req.inputs = [read_partition(buf) for _ in range(int_from_buffer(buf, 1))]
+        req.outputs = [read_partition(buf) for _ in range(int_from_buffer(buf, 1))]
 
         data_len = await int_from_async_reader(reader, 4)
         req.data = await reader.readexactly(data_len)

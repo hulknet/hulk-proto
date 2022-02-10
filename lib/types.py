@@ -1,5 +1,6 @@
 import asyncio
 from enum import IntEnum
+from typing import List, Sized
 
 
 class EnumIntDefault(IntEnum):
@@ -81,6 +82,9 @@ class ID32(bytes):
         return super().__new__(cls, value)
 
 
+ID8Partition = List[ID8]
+
+
 # helpers
 def int_from_buffer(buf, size: int = 8) -> int:
     return int.from_bytes(buf.read(size), byteorder='big')
@@ -88,3 +92,7 @@ def int_from_buffer(buf, size: int = 8) -> int:
 
 async def int_from_async_reader(reader: asyncio.StreamReader, size: int = 8) -> int:
     return int.from_bytes(await reader.readexactly(size), byteorder='big')
+
+
+def lenb(iterable: Sized, size: int) -> bytes:
+    return len(iterable).to_bytes(size, byteorder='big')

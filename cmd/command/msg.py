@@ -12,6 +12,7 @@ def init(subparsers):
     announce_parser.add_argument('driver', type=str, choices=['store', 'memory', 'cpu'], default='memory')
     announce_parser.add_argument('command', type=str, default='get')
     announce_parser.add_argument('-i', '--input', nargs='+', type=lambda x: bytes.fromhex(x))
+    announce_parser.add_argument('-o', '--output', nargs='+', type=lambda x: bytes.fromhex(x))
     announce_parser.add_argument('-d', '--data', type=lambda x: bytes.fromhex(x), default=b'')
 
     input_parser = subparsers.add_parser('input', help='Input a message')
