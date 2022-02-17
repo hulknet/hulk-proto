@@ -29,7 +29,6 @@ def handle_announce(args):
     header += int(0).to_bytes(1, "big")  # output count
     req += len(header).to_bytes(2, "big") + header
     req += len(args.data).to_bytes(4, "big") + args.data
-    print(req.hex())
     asyncio.run(instruction_client(req))
 
 

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Dict
 
 from instruction import Instruction
@@ -12,23 +13,23 @@ input_to_instruction: Dict[ID8, ID8] = dict()
 
 async def handle_announce_request(req: AnnounceRequest):
     if req.id in instructions:
-        print(f"Instruction {req.id} already exists")
+        logging.info(f"Instruction {req.id} already exists")
         return
 
     instructions[req.id] = Instruction(req)
-    print(f"Instruction added: {req.id.hex()}")
+    logging.info(f"Instruction added: {req.id.hex()}")
     for input_parts in instructions[req.id].input_ids:
         for input_id in input_parts:
             if input_id in input_values:
-                instructions[req.id].input_parts[input_id] = input_values[input_id]
+                instructions[req.id].add_input_part(input_id, input_values[input_id])
                 del input_values[input_id]
-                print(f"Input value added: {input_id.hex()} to {req.id.hex()}")
+                logging.info(f"Input value added: {input_id.hex()} to {req.id.hex()}")
             else:
                 input_to_instruction[input_id] = req.id
-                print(f"Input id waiting: {input_id.hex()}")
+                logging.info(f"Input id waiting: {input_id.hex()}")
 
     if instructions[req.id].is_ready():
-        pass
+        logging.info(f"Instruction {req.id.hex()} is ready: {instructions[req.id].encode().hex()}")
 
 
 async def handle_input_request(req: InputRequest):
@@ -36,13 +37,13 @@ async def handle_input_request(req: InputRequest):
         instruction_id = input_to_instruction[req.id]
         instructions[instruction_id].add_input_part(req.id, req.data)
         del input_to_instruction[req.id]
-        print(f"Input value added: {req.id.hex()} to {instruction_id.hex()}")
+        logging.info(f"Input value added: {req.id.hex()} to {instruction_id.hex()}")
 
         if instructions[instruction_id].is_ready():
-            pass
+            logging.info(f"Instruction {instruction_id.hex()} is ready: {instructions[instruction_id].encode().hex()}")
     else:
         input_values[req.id] = req.data
-        print(f"Input value waiting: {req.id.hex()}")
+        logging.info(f"Input value waiting: {req.id.hex()}")
 
 
 async def handle(reader, writer):
@@ -53,14 +54,16 @@ async def handle(reader, writer):
         elif req_type == RequestType.input:
             await handle_input_request(await InputRequest.read(reader))
         else:
-            print("Unknown request type")
+            logging.info("Unknown request type")
     except Exception as e:
-        print("Error:", e)
+        logging.error("Error:", e)
     finally:
         writer.close()
 
 
 async def main():
+    logging.basicConfig(level=logging.INFO)
+
     server = await asyncio.start_server(handle, '127.0.0.1', 8001)
     async with server:
         await server.serve_forever()

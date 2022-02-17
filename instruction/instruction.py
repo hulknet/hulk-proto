@@ -1,7 +1,7 @@
 from functools import reduce
 from typing import List, Dict
 
-from lib.types import ID8, ID8Partition, EnumIntDefault
+from lib.types import ID8, ID8Partition, EnumIntDefault, lenb
 from request import AnnounceRequest
 
 
@@ -20,5 +20,20 @@ class Instruction:
     def is_ready(self) -> bool:
         return len(self.input_parts) == reduce(lambda r, x: r + len(x), self.input_ids, 0)  # weak check
 
-    # def encode(self) -> bytes:
-    #     return self.command.bytes() + bytes(self.input_ids) + bytes(self.output_ids)
+    def encode(self) -> bytes:
+        e = self.command.bytes()
+        e += lenb(self.input_ids, 1)
+        for parts in self.input_ids:
+            d = bytes()
+            for part_id in parts:
+                d += self.input_parts[part_id]  # TODO: implement data merging
+            e += lenb(d, 4)
+            e += d
+
+        e += lenb(self.output_ids, 1)
+        for parts in self.output_ids:
+            e += lenb(parts, 1)
+            for part_id in parts:
+                e += part_id
+
+        return e
