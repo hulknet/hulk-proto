@@ -13,7 +13,6 @@ def init(subparsers):
     announce_parser.add_argument('command', type=str, default='get')
     announce_parser.add_argument('-i', '--input', nargs='+', type=lambda x: bytes.fromhex(x))
     announce_parser.add_argument('-o', '--output', nargs='+', type=lambda x: bytes.fromhex(x))
-    announce_parser.add_argument('-d', '--data', type=lambda x: bytes.fromhex(x), default=b'')
 
     input_parser = subparsers.add_parser('input', help='Input a message')
     input_parser.set_defaults(func=handle_input)
@@ -28,7 +27,6 @@ def handle_announce(args):
     header += len(args.input).to_bytes(1, "big") + reduce(lambda a, b: a + b, args.input)
     header += int(0).to_bytes(1, "big")  # output count
     req += len(header).to_bytes(2, "big") + header
-    req += len(args.data).to_bytes(4, "big") + args.data
     asyncio.run(instruction_client(req))
 
 

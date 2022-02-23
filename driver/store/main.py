@@ -2,7 +2,7 @@ import asyncio
 
 
 async def handle(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-    print(reader.readline())
+    print(await reader.readexactly(1))
     pass
 
 
