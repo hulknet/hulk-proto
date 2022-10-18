@@ -22,42 +22,42 @@ async def send_instruction(instruction: Instruction):
 
 
 async def handle_announce_request(reader: asyncio.StreamReader):
-    inst = await read_instruction_announce(reader)
-    if inst.id in instructions:
-        logging.info(f"Instruction {inst.id} already exists")
+    instruction = await read_instruction_announce(reader)
+    if instruction.id in instructions:
+        logging.info(f"Instruction {instruction.id.hex()} already exists")
         return
 
-    instructions[inst.id] = inst
-    logging.info(f"Instruction added: {inst.id.hex()}")
-    for input_parts in instructions[inst.id].input_ids:
-        for input_id in input_parts:
-            if input_id in input_values:
-                instructions[inst.id].add_input_part(input_id, input_values[input_id])
-                del input_values[input_id]
-                logging.info(f"Input value added: {input_id.hex()} to {inst.id.hex()}")
-            else:
-                input_to_instruction[input_id] = inst.id
-                logging.info(f"Input id waiting: {input_id.hex()}")
+    instructions[instruction.id] = instruction
+    logging.info(f"Instruction added: {instruction.id.hex()}")
+    for input_id in instructions[instruction.id].input_ids:
+        if input_id in input_values:
+            instructions[instruction.id].add_input(input_id, input_values[input_id])
+            del input_values[input_id]
+            logging.info(f"Input value added: {input_id.hex()} to {instruction.id.hex()}")
+        else:
+            input_to_instruction[input_id] = instruction.id
+            logging.info(f"Input id: {input_id.hex()} waiting for data")
 
-    if instructions[inst.id].is_ready():
-        logging.info(f"Instruction {inst.id.hex()} is ready: {instructions[inst.id].encode().hex()}")
-        await send_instruction(instructions[inst.id])
+    await check_readiness(instruction.id)
 
 
 async def handle_input_request(reader: asyncio.StreamReader):
     i = await read_instruction_input(reader)
     if i.id in input_to_instruction:
         instruction_id = input_to_instruction[i.id]
-        instructions[instruction_id].add_input_part(i.id, i.data)
+        instructions[instruction_id].add_input(i.id, i.data)
         del input_to_instruction[i.id]
         logging.info(f"Input value added: {i.id.hex()} to {instruction_id.hex()}")
-
-        if instructions[instruction_id].is_ready():
-            logging.info(f"Instruction {instruction_id.hex()} is ready: {instructions[instruction_id].encode().hex()}")
-            await send_instruction(instructions[instruction_id])
+        await check_readiness(instruction_id)
     else:
         input_values[i.id] = i.data
         logging.info(f"Input value waiting: {i.id.hex()}")
+
+
+async def check_readiness(instruction_id):
+    if instructions[instruction_id].is_ready():
+        logging.info(f"Instruction {instruction_id.hex()} is ready: {instructions[instruction_id].encode().hex()}")
+        await send_instruction(instructions[instruction_id])
 
 
 async def handle(reader, writer):

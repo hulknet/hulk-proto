@@ -1,6 +1,8 @@
 import asyncio
 from enum import IntEnum
-from typing import List, Sized
+from typing import Sized
+
+from attrs import define, field
 
 
 class EnumIntDefault(IntEnum):
@@ -82,7 +84,12 @@ class ID32(bytes):
         return super().__new__(cls, value)
 
 
-ID8Partition = List[ID8]
+# Block types
+@define(frozen=True, slots=True)
+class Block:
+    id: ID32
+    size: int
+    base_rate: float = field(default=42)
 
 
 # helpers
