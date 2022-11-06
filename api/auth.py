@@ -33,7 +33,7 @@ async def login(request: Request):
 
     if not await request.app.ctx.db.execute_command(
             "BF.EXISTS", request.app.ctx.prefix + f"known_keys", pubkey.serialize().hex()):
-        return json({"error": "Unknown key"}, status=401)
+        return json({"error": "Unknown public key"}, status=401)
 
     session_key = secrets.token_hex(32)
     await request.app.ctx.db.hset(request.app.ctx.prefix + f"auth:session", session_key, pubkey.serialize().hex())
